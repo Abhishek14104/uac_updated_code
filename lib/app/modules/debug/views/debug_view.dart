@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:ultimate_alarm_clock/DataTransferLogsView.dart';
 import '../../../data/providers/isar_provider.dart';
 import '../../../modules/settings/controllers/theme_controller.dart';
 import '../../../utils/constants.dart';
@@ -347,6 +348,13 @@ class DebugView extends GetView<DebugController> {
             color: controller.themeController.primaryTextColor.value.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Get.to(() => DataTransferLogsView());
+            },
+            child: Text('View Logs'),
+          ),
+          const SizedBox(height: 8),
           Text(
             'No alarm history found',
             style: TextStyle(

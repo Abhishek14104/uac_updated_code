@@ -19,6 +19,16 @@ class AlarmControlView extends GetView<AlarmControlController> {
 
   ThemeController themeController = Get.find<ThemeController>();
 
+  static const MethodChannel watchChannel = MethodChannel('watch_action_channel');
+
+Future<void> sendToWatch(String action) async {
+  try {
+    await watchChannel.invokeMethod('sendActionToWatch', {'action': action});
+  } catch (e) {
+    print('Failed to send $action to watch: $e');
+  }
+}
+
   Obx getAddSnoozeButtons(
       BuildContext context, int snoozeMinutes, String title) {
     return Obx(
@@ -178,6 +188,7 @@ class AlarmControlView extends GetView<AlarmControlController> {
                                     onPressed: () {
                                       Utils.hapticFeedback();
                                       controller.startSnooze();
+                                      sendToWatch('snooze');
                                     },
                                   ),
                                 ),

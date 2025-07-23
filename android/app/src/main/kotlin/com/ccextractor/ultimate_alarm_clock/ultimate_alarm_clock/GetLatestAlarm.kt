@@ -438,7 +438,8 @@ data class AlarmModel(
     val location: String,
     val alarmDate: String,
     val alarmId: String,
-    val ringOn: Int
+    val ringOn: Int,
+    val isEnabled: Int,
 ) {
     companion object {
         @SuppressLint("Range")
@@ -451,6 +452,8 @@ data class AlarmModel(
             val activityMonitor = cursor.getInt(cursor.getColumnIndex("activityMonitor"))
             val isWeatherEnabled = cursor.getInt(cursor.getColumnIndex("isWeatherEnabled"))
             val weatherTypes = cursor.getString(cursor.getColumnIndex("weatherTypes"))
+            // val isEnabled = cursor.getInt(cursor.getColumnIndex("isEnabled"))
+            val isEnabled = cursor.getInt(cursor.getColumnIndex("isEnabled"))
             
             
             val weatherConditionTypeIndex = cursor.getColumnIndex("weatherConditionType")
@@ -504,7 +507,8 @@ data class AlarmModel(
                 location,
                 alarmDate,
                 alarmId,
-                ringOn
+                ringOn,
+                isEnabled
             )
         }
     }

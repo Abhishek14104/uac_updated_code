@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/material.dart';
 
 import 'package:isar/isar.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:ultimate_alarm_clock/app/data/models/user_model.dart';
 import 'package:ultimate_alarm_clock/app/utils/utils.dart';
 
@@ -250,6 +252,7 @@ if (offsetDetails != null) {
       location: map['location'],
       activityInterval: map['activityInterval'],
       minutesSinceMidnight: map['minutesSinceMidnight'],
+      // days: stringToBoolList(map['days'] ?? "0000000"),
       days: stringToBoolList(map['days']),
       weatherTypes: List<int>.from(jsonDecode(map['weatherTypes'])),
       isMathsEnabled: map['isMathsEnabled'] == 1,
@@ -501,6 +504,14 @@ if (offsetDetails != null) {
     // Convert the list of bools to a string of 1s and 0s
     return rotatedList.map((b) => b ? '1' : '0').join();
   }
+
+//   static String boolListToString(List<bool> list) {
+//   if (list.isEmpty) {
+//     debugPrint("⚠️ boolListToString() called with empty list. Defaulting to 'false'.");
+//     return "false";
+//   }
+//   return list.last ? "true" : "false";
+// }
 
   List<bool> stringToBoolList(String s) {
     // Rotate the string to start with Monday

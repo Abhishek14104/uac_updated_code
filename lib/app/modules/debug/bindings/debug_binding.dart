@@ -4,8 +4,7 @@ import '../controllers/debug_controller.dart';
 class DebugBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<DebugController>(
-      () => DebugController(),
-    );
+ Get.lazyPut(() => DebugController());
+Get.put(DebugController());
   }
 }

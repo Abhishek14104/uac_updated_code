@@ -37,6 +37,14 @@ import java.util.Locale
 import android.app.NotificationChannel
 import android.graphics.Color
 import androidx.core.app.NotificationCompat
+import com.ccextractor.ultimate_alarm_clock.communication.MessageSender
+import com.ccextractor.ultimate_alarm_clock.communication.UACDataLayerListenerService
+// import com.ccextractor.ultimate_alarm_clock.communication.UACDataLayerListenerService
+import com.google.android.gms.wearable.Wearable
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataEvent
+// import com.ccextractor.ultimate_alarm_clock.communication.MessageReceiver
 
 
 class MainActivity : FlutterActivity() {
@@ -44,6 +52,7 @@ class MainActivity : FlutterActivity() {
         const val CHANNEL1 = "ulticlock"
         const val CHANNEL2 = "timer"
         const val CHANNEL3 = "system_ringtones"
+        const val CHANNEL4 = "watch_action_channel"
         const val ACTION_START_FLUTTER_APP = "com.ccextractor.ultimate_alarm_clock"
         const val EXTRA_KEY = "alarmRing"
         const val ALARM_TYPE = "isAlarm"
@@ -66,6 +75,43 @@ class MainActivity : FlutterActivity() {
     private var alarmManager: AlarmManager? = null
     private var lastScheduledAlarmTime: Long = 0
     private var lastScheduledAlarmType: String = ""
+
+    // override fun onResume() {
+    //     super.onResume()
+    //     MessageReceiver.register(this)
+    // }
+    
+    // override fun onPause() {
+    //     super.onPause()
+    //     MessageReceiver.unregister(this)
+    // }    
+
+    // override fun onResume() {
+    //     super.onResume()
+    //     PhoneAlarmReceiver.register(this)
+    // }
+    
+    // override fun onPause() {
+    //     super.onPause()
+    //     PhoneAlarmReceiver.unregister(this)
+    // }    
+
+    // override fun onCreate(savedInstanceState: Bundle?) {
+    //     super.onCreate(savedInstanceState)
+    //     // PhoneAlarmReceiver.register(this)
+    //     context.startService(Intent(context, UACDataLayerListenerService::class.java))
+    //     Log.d("MainActivity", "onCreate called - Registering PhoneAlarmReceiver")
+
+    //     Wearable.getDataClient(this).addListener(object : DataClient.OnDataChangedListener {
+    //         override fun onDataChanged(dataEvents: DataEventBuffer) {
+    //             for (event in dataEvents) {
+    //                 if (event.type == DataEvent.TYPE_CHANGED) {
+    //                     val item = event.dataItem
+    //                     Log.d("TEST_RECEIVER", "Data changed: ${item.uri.path}")
+    //                 }
+    //             }
+    //         }
+    //     })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,10 +140,14 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        UACDataLayerListenerService.flutterEngine = flutterEngine
+        
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         var methodChannel1 = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL1)
         var methodChannel2 = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL2)
         var methodChannel3 = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL3)
+        val methodChannel4 = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL4)
 
         val intent = intent
 
@@ -140,6 +190,20 @@ class MainActivity : FlutterActivity() {
             alarmConfig["shouldAlarmRing"] = false
             alarmConfig["isSharedAlarm"] = false
         }
+
+        methodChannel4.setMethodCallHandler { call, result ->
+            if (call.method == "sendActionToWatch") {
+                val action = call.argument<String>("action")
+                if (action != null) {
+                    MessageSender.sendAction(this, action)
+                    result.success(null)
+                } else {
+                    result.error("INVALID_ACTION", "Missing action string", null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }  
 
         methodChannel3.setMethodCallHandler { call, result ->
             when (call.method) {

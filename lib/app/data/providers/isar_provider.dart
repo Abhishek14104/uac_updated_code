@@ -37,7 +37,6 @@ enum LogType {
   String toString() => value;
 }
 
-
 class IsarDb {
   static final IsarDb _instance = IsarDb._internal();
   late Future<Isar> db;
@@ -109,18 +108,24 @@ class IsarDb {
   void _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       // Add weatherConditionType column
-      await db.execute('ALTER TABLE alarms ADD COLUMN weatherConditionType INTEGER NOT NULL DEFAULT 2');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN weatherConditionType INTEGER NOT NULL DEFAULT 2');
     }
     if (oldVersion < 3) {
       // Add activityConditionType column
-      await db.execute('ALTER TABLE alarms ADD COLUMN activityConditionType INTEGER NOT NULL DEFAULT 2');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN activityConditionType INTEGER NOT NULL DEFAULT 2');
     }
     if (oldVersion < 4) {
       // Add sunrise alarm columns
-      await db.execute('ALTER TABLE alarms ADD COLUMN isSunriseEnabled INTEGER NOT NULL DEFAULT 0');
-      await db.execute('ALTER TABLE alarms ADD COLUMN sunriseDuration INTEGER NOT NULL DEFAULT 30');
-      await db.execute('ALTER TABLE alarms ADD COLUMN sunriseIntensity REAL NOT NULL DEFAULT 1.0');
-      await db.execute('ALTER TABLE alarms ADD COLUMN sunriseColorScheme INTEGER NOT NULL DEFAULT 0');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN isSunriseEnabled INTEGER NOT NULL DEFAULT 0');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN sunriseDuration INTEGER NOT NULL DEFAULT 30');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN sunriseIntensity REAL NOT NULL DEFAULT 1.0');
+      await db.execute(
+          'ALTER TABLE alarms ADD COLUMN sunriseColorScheme INTEGER NOT NULL DEFAULT 0');
     }
   }
 
@@ -278,21 +283,21 @@ class IsarDb {
   static Future<AlarmModel> addAlarm(AlarmModel alarmRecord) async {
     final isarProvider = IsarDb();
     final db = await isarProvider.db;
-    
+
     await db.writeTxn(() async {
       await db.alarmModels.put(alarmRecord);
     });
     final sqlmap = alarmRecord.toSQFliteMap();
     print(sqlmap);
-    
+
     if (!alarmRecord.isSharedAlarmEnabled) {
       final sql = await IsarDb().getAlarmSQLiteDatabase();
       try {
         // Try to insert with all fields including new columns
         await sql!.insert('alarms', sqlmap);
       } catch (e) {
-        if (e.toString().contains('locationConditionType') || 
-            e.toString().contains('weatherConditionType') || 
+        if (e.toString().contains('locationConditionType') ||
+            e.toString().contains('weatherConditionType') ||
             e.toString().contains('activityConditionType') ||
             e.toString().contains('isSunriseEnabled') ||
             e.toString().contains('sunriseDuration') ||
@@ -314,7 +319,6 @@ class IsarDb {
         }
       }
     }
-    
     // Detailed alarm creation log (NORMAL - always visible)
     String alarmType = alarmRecord.isSharedAlarmEnabled ? 'SHARED' : 'LOCAL';
     String detailedMessage = buildDetailedAlarmCreationMessage(alarmRecord, alarmType);
@@ -323,7 +327,7 @@ class IsarDb {
       status: Status.success,
       type: LogType.normal,
     );
-    
+
     List a = await IsarDb().getLogs();
     print(a);
     return alarmRecord;
@@ -436,7 +440,6 @@ class IsarDb {
       );
     }
 
-
     List<AlarmModel> alarms = await db.alarmModels
         .where()
         .filter()
@@ -494,7 +497,7 @@ class IsarDb {
 
         return aTimeUntilNextAlarm < bTimeUntilNextAlarm ? a : b;
       });
-      
+
       return closestAlarm;
     }
   }
@@ -505,12 +508,12 @@ class IsarDb {
     await db.writeTxn(() async {
       await db.alarmModels.put(alarmRecord);
     });
-    
+
     // Detailed alarm update log (NORMAL - always visible)
     String alarmType = alarmRecord.isSharedAlarmEnabled ? 'SHARED' : 'LOCAL';
     String detailedMessage = buildDetailedAlarmUpdateMessage(alarmRecord, alarmType);
     await IsarDb().insertLog(detailedMessage, status: Status.success, type: LogType.normal);
-    
+
     if (!alarmRecord.isSharedAlarmEnabled) {
       final sql = await IsarDb().getAlarmSQLiteDatabase();
       await sql!.update(
@@ -522,18 +525,15 @@ class IsarDb {
     }
   }
 
-  
+
   static Future<void> fixMaxSnoozeCountInAlarms() async {
     final isarProvider = IsarDb();
     final db = await isarProvider.db;
     final sql = await IsarDb().getAlarmSQLiteDatabase();
-    
-  
+
     final alarms = await db.alarmModels.where().findAll();
-    
-  
+
     for (final alarm in alarms) {
-  
       await sql!.update(
         'alarms',
         {'maxSnoozeCount': alarm.maxSnoozeCount},
@@ -606,13 +606,13 @@ class IsarDb {
     final isarProvider = IsarDb();
     final db = await isarProvider.db;
     final tobedeleted = await db.alarmModels.get(id);
-    
+
     if (tobedeleted == null) return;
-    
+
     await db.writeTxn(() async {
       await db.alarmModels.delete(id);
     });
-    
+
     // Detailed alarm deletion log (NORMAL - always visible)
     String alarmType = tobedeleted.isSharedAlarmEnabled ? 'SHARED' : 'LOCAL';
     String detailedMessage = "DELETED $alarmType ALARM - Time: ${tobedeleted.alarmTime}, ID: ${tobedeleted.alarmID}, Type: $alarmType";
@@ -620,7 +620,6 @@ class IsarDb {
       detailedMessage += ", Note: \"${tobedeleted.note}\"";
     }
     await IsarDb().insertLog(detailedMessage, status: Status.warning, type: LogType.normal);
-    
 
     if (!tobedeleted.isSharedAlarmEnabled) {
       final sql = await IsarDb().getAlarmSQLiteDatabase();
@@ -889,12 +888,12 @@ class IsarDb {
 
   static String buildDetailedAlarmCreationMessage(AlarmModel alarm, String alarmType) {
     List<String> details = [];
-    
+
     // Basic info
     details.add("Time: ${alarm.alarmTime}");
     details.add("ID: ${alarm.alarmID}");
     details.add("Type: $alarmType");
-    
+
     // Days/Repetition
     List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     List<String> enabledDays = [];
@@ -906,71 +905,92 @@ class IsarDb {
     } else {
       details.add("Days: One-time");
     }
-    
+
     // Conditions
     List<String> conditions = [];
-    
+
     if (alarm.isActivityEnabled) {
       conditions.add("Activity: ON");
     }
-    
+
     if (alarm.isLocationEnabled) {
       String locationCondition = '';
       switch (alarm.locationConditionType) {
-        case 1: locationCondition = 'Ring when AT'; break;
-        case 2: locationCondition = 'Cancel when AT'; break;
-        case 3: locationCondition = 'Ring when AWAY'; break;
-        case 4: locationCondition = 'Cancel when AWAY'; break;
-        default: locationCondition = 'Unknown'; break;
+        case 1:
+          locationCondition = 'Ring when AT';
+          break;
+        case 2:
+          locationCondition = 'Cancel when AT';
+          break;
+        case 3:
+          locationCondition = 'Ring when AWAY';
+          break;
+        case 4:
+          locationCondition = 'Cancel when AWAY';
+          break;
+        default:
+          locationCondition = 'Unknown';
+          break;
       }
       conditions.add("Location: $locationCondition (${alarm.location})");
     }
-    
+
     if (alarm.isWeatherEnabled) {
       String weatherCondition = '';
       switch (alarm.weatherConditionType) {
-        case 1: weatherCondition = 'Ring when weather matches'; break;
-        case 2: weatherCondition = 'Cancel when weather matches'; break;
-        case 3: weatherCondition = 'Ring when weather different'; break;
-        case 4: weatherCondition = 'Cancel when weather different'; break;
-        default: weatherCondition = 'Unknown'; break;
+        case 1:
+          weatherCondition = 'Ring when weather matches';
+          break;
+        case 2:
+          weatherCondition = 'Cancel when weather matches';
+          break;
+        case 3:
+          weatherCondition = 'Ring when weather different';
+          break;
+        case 4:
+          weatherCondition = 'Cancel when weather different';
+          break;
+        default:
+          weatherCondition = 'Unknown';
+          break;
       }
       conditions.add("Weather: $weatherCondition (${alarm.weatherTypes})");
     }
-    
+
     if (conditions.isNotEmpty) {
       details.add("Conditions: [${conditions.join(', ')}]");
     } else {
       details.add("Conditions: None");
     }
-    
+
     // Challenges
     List<String> challenges = [];
     if (alarm.isMathsEnabled) challenges.add("Math");
     if (alarm.isShakeEnabled) challenges.add("Shake");
     if (alarm.isQrEnabled) challenges.add("QR Code");
     if (alarm.isPedometerEnabled) challenges.add("Steps");
-    
+
     if (challenges.isNotEmpty) {
       details.add("Challenges: [${challenges.join(', ')}]");
     }
-    
+
     // Note
     if (alarm.note.isNotEmpty) {
       details.add("Note: \"${alarm.note}\"");
     }
-    
+
     return "CREATED $alarmType ALARM - ${details.join(', ')}";
   }
 
-  static String buildDetailedAlarmUpdateMessage(AlarmModel alarm, String alarmType) {
+  static String buildDetailedAlarmUpdateMessage(
+      AlarmModel alarm, String alarmType) {
     List<String> details = [];
-    
+
     // Basic info
     details.add("Time: ${alarm.alarmTime}");
     details.add("ID: ${alarm.alarmID}");
     details.add("Type: $alarmType");
-    
+
     // Days/Repetition
     List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     List<String> enabledDays = [];
@@ -982,87 +1002,108 @@ class IsarDb {
     } else {
       details.add("Days: One-time");
     }
-    
+
     // Conditions
     List<String> conditions = [];
-    
+
     if (alarm.isActivityEnabled) {
       conditions.add("Activity: ON");
     }
-    
+
     if (alarm.isLocationEnabled) {
       String locationCondition = '';
       switch (alarm.locationConditionType) {
-        case 1: locationCondition = 'Ring when AT'; break;
-        case 2: locationCondition = 'Cancel when AT'; break;
-        case 3: locationCondition = 'Ring when AWAY'; break;
-        case 4: locationCondition = 'Cancel when AWAY'; break;
-        default: locationCondition = 'Unknown'; break;
+        case 1:
+          locationCondition = 'Ring when AT';
+          break;
+        case 2:
+          locationCondition = 'Cancel when AT';
+          break;
+        case 3:
+          locationCondition = 'Ring when AWAY';
+          break;
+        case 4:
+          locationCondition = 'Cancel when AWAY';
+          break;
+        default:
+          locationCondition = 'Unknown';
+          break;
       }
       conditions.add("Location: $locationCondition (${alarm.location})");
     }
-    
+
     if (alarm.isWeatherEnabled) {
       String weatherCondition = '';
       switch (alarm.weatherConditionType) {
-        case 1: weatherCondition = 'Ring when weather matches'; break;
-        case 2: weatherCondition = 'Cancel when weather matches'; break;
-        case 3: weatherCondition = 'Ring when weather different'; break;
-        case 4: weatherCondition = 'Cancel when weather different'; break;
-        default: weatherCondition = 'Unknown'; break;
+        case 1:
+          weatherCondition = 'Ring when weather matches';
+          break;
+        case 2:
+          weatherCondition = 'Cancel when weather matches';
+          break;
+        case 3:
+          weatherCondition = 'Ring when weather different';
+          break;
+        case 4:
+          weatherCondition = 'Cancel when weather different';
+          break;
+        default:
+          weatherCondition = 'Unknown';
+          break;
       }
       conditions.add("Weather: $weatherCondition (${alarm.weatherTypes})");
     }
-    
+
     if (conditions.isNotEmpty) {
       details.add("Conditions: [${conditions.join(', ')}]");
     } else {
       details.add("Conditions: None");
     }
-    
+
     // Challenges
     List<String> challenges = [];
     if (alarm.isMathsEnabled) challenges.add("Math");
     if (alarm.isShakeEnabled) challenges.add("Shake");
     if (alarm.isQrEnabled) challenges.add("QR Code");
     if (alarm.isPedometerEnabled) challenges.add("Steps");
-    
+
     if (challenges.isNotEmpty) {
       details.add("Challenges: [${challenges.join(', ')}]");
     }
-    
+
     // Note
     if (alarm.note.isNotEmpty) {
       details.add("Note: \"${alarm.note}\"");
     }
-    
+
     return "UPDATED $alarmType ALARM - ${details.join(', ')}";
   }
 
-  static String buildDetailedAlarmRingMessage(AlarmModel alarm, String alarmType) {
+  static String buildDetailedAlarmRingMessage(
+      AlarmModel alarm, String alarmType) {
     List<String> details = [];
-    
+
     // Primary identification - what user sees first
     String primaryInfo = "🔔 RINGING $alarmType ALARM";
-    
+
     // Alarm identification details
     details.add("⏰ Time: ${alarm.alarmTime}");
-    
+
     // Label/Name (most important for user identification)
     if (alarm.label != null && alarm.label!.isNotEmpty) {
       details.add("📝 Label: \"${alarm.label}\"");
     }
-    
+
     // Note (secondary identification)
     if (alarm.note.isNotEmpty) {
       details.add("💬 Note: \"${alarm.note}\"");
     }
-    
+
     // Ringtone (helps user identify which alarm is ringing)
     if (alarm.ringtoneName.isNotEmpty) {
       details.add("🎵 Ringtone: ${alarm.ringtoneName}");
     }
-    
+
     // Days/Repetition (important for identification)
     List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     List<String> enabledDays = [];
@@ -1074,72 +1115,95 @@ class IsarDb {
     } else {
       details.add("📅 Days: One-time alarm");
     }
-    
+
     // Owner info for shared alarms
     if (alarm.isSharedAlarmEnabled && alarm.ownerName.isNotEmpty) {
       details.add("👥 Owner: ${alarm.ownerName}");
     }
-    
+
     // Profile info
     if (alarm.profile.isNotEmpty && alarm.profile != 'Default') {
       details.add("👤 Profile: ${alarm.profile}");
     }
-    
+
     // Active conditions (important for understanding why it rang)
     List<String> activeConditions = [];
-    
+
     if (alarm.isActivityEnabled) {
       activeConditions.add("Activity Monitor");
     }
-    
+
     if (alarm.isLocationEnabled) {
       String locationCondition = '';
       switch (alarm.locationConditionType) {
-        case 1: locationCondition = 'Ring when AT'; break;
-        case 2: locationCondition = 'Cancel when AT'; break;
-        case 3: locationCondition = 'Ring when AWAY'; break;
-        case 4: locationCondition = 'Cancel when AWAY'; break;
-        default: locationCondition = 'Unknown'; break;
+        case 1:
+          locationCondition = 'Ring when AT';
+          break;
+        case 2:
+          locationCondition = 'Cancel when AT';
+          break;
+        case 3:
+          locationCondition = 'Ring when AWAY';
+          break;
+        case 4:
+          locationCondition = 'Cancel when AWAY';
+          break;
+        default:
+          locationCondition = 'Unknown';
+          break;
       }
       activeConditions.add("Location: $locationCondition (${alarm.location})");
     }
-    
+
     if (alarm.isWeatherEnabled) {
       String weatherCondition = '';
       switch (alarm.weatherConditionType) {
-        case 1: weatherCondition = 'Ring when weather matches'; break;
-        case 2: weatherCondition = 'Cancel when weather matches'; break;
-        case 3: weatherCondition = 'Ring when weather different'; break;
-        case 4: weatherCondition = 'Cancel when weather different'; break;
-        default: weatherCondition = 'Unknown'; break;
+        case 1:
+          weatherCondition = 'Ring when weather matches';
+          break;
+        case 2:
+          weatherCondition = 'Cancel when weather matches';
+          break;
+        case 3:
+          weatherCondition = 'Ring when weather different';
+          break;
+        case 4:
+          weatherCondition = 'Cancel when weather different';
+          break;
+        default:
+          weatherCondition = 'Unknown';
+          break;
       }
-      activeConditions.add("Weather: $weatherCondition (${alarm.weatherTypes})");
+      activeConditions
+          .add("Weather: $weatherCondition (${alarm.weatherTypes})");
     }
-    
+
     if (activeConditions.isNotEmpty) {
       details.add("⚙️ Active Conditions: [${activeConditions.join(', ')}]");
     }
-    
+
     // Challenges (what user needs to do to dismiss)
     List<String> challenges = [];
     if (alarm.isMathsEnabled) challenges.add("Math Questions");
     if (alarm.isShakeEnabled) challenges.add("Shake Device");
     if (alarm.isQrEnabled) challenges.add("Scan QR Code");
-    if (alarm.isPedometerEnabled) challenges.add("Walk ${alarm.numberOfSteps} Steps");
-    
+    if (alarm.isPedometerEnabled)
+      challenges.add("Walk ${alarm.numberOfSteps} Steps");
+
     if (challenges.isNotEmpty) {
       details.add("🎯 Challenges: [${challenges.join(', ')}]");
     }
-    
+
     // Guardian info (important safety feature)
     if (alarm.isGuardian) {
-      details.add("🆘 Guardian: ${alarm.guardian} (${alarm.guardianTimer}s timer)");
+      details.add(
+          "🆘 Guardian: ${alarm.guardian} (${alarm.guardianTimer}s timer)");
     }
-    
+
     // Technical details
     details.add("🆔 ID: ${alarm.alarmID}");
     details.add("🏷️ Type: $alarmType");
-    
+
     return "$primaryInfo - ${details.join(', ')}";
   }
 }
