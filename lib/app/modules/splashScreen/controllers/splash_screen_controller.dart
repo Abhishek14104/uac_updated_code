@@ -15,6 +15,7 @@ import '../../home/controllers/home_controller.dart';
 class SplashScreenController extends GetxController {
   MethodChannel alarmChannel = const MethodChannel('ulticlock');
   MethodChannel timerChannel = const MethodChannel('timer');
+  static const MethodChannel watchChannel = MethodChannel('com.ccextractor.uac/alarm_actions');
 
   bool shouldAlarmRing = true;
   bool shouldNavigate = true;
@@ -24,11 +25,24 @@ class SplashScreenController extends GetxController {
 
   getCurrentlyRingingAlarm() async {
     AlarmModel _alarmRecord = homeController.genFakeAlarmModel();
-    AlarmModel latestAlarm =
-        await IsarDb.getLatestAlarm(_alarmRecord, false);
+    AlarmModel latestAlarm = await IsarDb.getLatestAlarm(_alarmRecord, false);
     debugPrint('CURRENT RINGING : ${latestAlarm.alarmTime}');
     return latestAlarm;
   }
+
+  // void initWatchActionListener() {
+  //   watchChannel.setMethodCallHandler((call) async {
+  //     if (call.method == "handleReceivedAction") {
+  //       final Map args = call.arguments as Map;
+  //       final String action = args["action"];
+  //       final int alarmId = args["id"];
+  //       if (action == "delete") {
+  //         debugPrint("🗑️ Alarm deleted from watch: $alarmId");
+  //         // remove from DB, update UI, etc.
+  //       }
+  //     }
+  //   });
+  // }
 
   getNextAlarm() async {
     UserModel? _userModel = await SecureStorageProvider().retrieveUserModel();
@@ -129,20 +143,19 @@ class SplashScreenController extends GetxController {
               // Delay the Firestore refresh to allow alarm to ring properly
               homeController.handleSharedAlarmFiring();
             }
-            
-              // Get the currently ringing alarm based on its type
-              if (isSharedAlarm) {
-                // Get shared alarm from Firestore
-                UserModel? userModel = await SecureStorageProvider().retrieveUserModel();
-                AlarmModel sharedAlarmModel = homeController.genFakeAlarmModel();
-                currentlyRingingAlarm.value = await FirestoreDb.getLatestAlarm(
-                  userModel, 
-                  sharedAlarmModel, 
-                  false
-                );
-                debugPrint('Using SHARED alarm for ring screen: ${currentlyRingingAlarm.value.alarmTime}');
-              } else {
-                // Get local alarm from Isar
+
+            // Get the currently ringing alarm based on its type
+            if (isSharedAlarm) {
+              // Get shared alarm from Firestore
+              UserModel? userModel =
+                  await SecureStorageProvider().retrieveUserModel();
+              AlarmModel sharedAlarmModel = homeController.genFakeAlarmModel();
+              currentlyRingingAlarm.value = await FirestoreDb.getLatestAlarm(
+                  userModel, sharedAlarmModel, false);
+              debugPrint(
+                  'Using SHARED alarm for ring screen: ${currentlyRingingAlarm.value.alarmTime}');
+            } else {
+              // Get local alarm from Isar
               currentlyRingingAlarm.value = await getCurrentlyRingingAlarm();
                 debugPrint('Using LOCAL alarm for ring screen: ${currentlyRingingAlarm.value.alarmTime}');
               }
@@ -197,26 +210,23 @@ class SplashScreenController extends GetxController {
                   Utils.timeOfDayToDateTime(latestAlarmTimeOfDay),
                 );
 
-                try {
-                  await alarmChannel.invokeMethod('scheduleAlarm', {
-                    'isSharedAlarm': latestAlarm.isSharedAlarmEnabled,
-                    'isActivityEnabled': latestAlarm.isActivityEnabled,
-                    'isLocationEnabled': latestAlarm.isLocationEnabled,
-                    'isWeatherEnabled': latestAlarm.isWeatherEnabled,
-                    'weatherConditionType': latestAlarm.weatherConditionType,
-                    'intervalToAlarm': intervaltoAlarm,
-                    'location': latestAlarm.location,
-                    'weatherTypes': jsonEncode(latestAlarm.weatherTypes),
-                  });
-
-
-                  print("Scheduled...");
-                } on PlatformException catch (e) {
-                  print("Failed to schedule alarm: ${e.message}");
-                }
+              try {
+                await alarmChannel.invokeMethod('scheduleAlarm', {
+                  'isSharedAlarm': latestAlarm.isSharedAlarmEnabled,
+                  'isActivityEnabled': latestAlarm.isActivityEnabled,
+                  'isLocationEnabled': latestAlarm.isLocationEnabled,
+                  'isWeatherEnabled': latestAlarm.isWeatherEnabled,
+                  'weatherConditionType': latestAlarm.weatherConditionType,
+                  'intervalToAlarm': intervaltoAlarm,
+                  'location': latestAlarm.location,
+                  'weatherTypes': jsonEncode(latestAlarm.weatherTypes),
+                });
+              } on PlatformException catch (e) {
+                print("Failed to schedule alarm: ${e.message}");
               }
-              SystemNavigator.pop();
-              Get.offNamed('/bottom-navigation-bar');
+            }
+            SystemNavigator.pop();
+            Get.offNamed('/bottom-navigation-bar');
 
               alarmChannel.invokeMethod('minimizeApp');
           }

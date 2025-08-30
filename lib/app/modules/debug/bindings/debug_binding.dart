@@ -5,6 +5,5 @@ class DebugBinding extends Bindings {
   @override
   void dependencies() {
  Get.lazyPut(() => DebugController());
-Get.put(DebugController());
   }
 }

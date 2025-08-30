@@ -37,14 +37,13 @@ import java.util.Locale
 import android.app.NotificationChannel
 import android.graphics.Color
 import androidx.core.app.NotificationCompat
-import com.ccextractor.ultimate_alarm_clock.communication.MessageSender
+import com.google.gson.Gson
 import com.ccextractor.ultimate_alarm_clock.communication.UACDataLayerListenerService
-// import com.ccextractor.ultimate_alarm_clock.communication.UACDataLayerListenerService
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataEvent
-// import com.ccextractor.ultimate_alarm_clock.communication.MessageReceiver
+import com.ccextractor.ultimate_alarm_clock.communication.PhoneSender
 
 
 class MainActivity : FlutterActivity() {
@@ -192,18 +191,32 @@ class MainActivity : FlutterActivity() {
         }
 
         methodChannel4.setMethodCallHandler { call, result ->
-            if (call.method == "sendActionToWatch") {
-                val action = call.argument<String>("action")
-                if (action != null) {
-                    MessageSender.sendAction(this, action)
-                    result.success(null)
-                } else {
-                    result.error("INVALID_ACTION", "Missing action string", null)
+            when (call.method) {
+                "sendActionToWatch" -> {
+                    val action = call.argument<String>("action")
+                    val id = call.argument<String>("id") ?: ""
+                    if (action != null) {
+                        PhoneSender.sendActionToWatch(this, action, id)
+                        result.success("Action '$action' sent to watch.")
+                    } else {
+                        result.error("INVALID_ARGUMENTS", "Missing 'action' or 'id'", null)
+                    }
                 }
-            } else {
-                result.notImplemented()
+                "sendAlarmToWatch" -> {
+                    val alarmMap = call.arguments as? Map<String, Any>
+                    val isarId = call.argument<Int>("isarId")
+                    if (alarmMap != null && isarId != null) {
+                        val alarmMapMutable = alarmMap.toMutableMap()
+                        alarmMapMutable["isarid"] = isarId
+                        PhoneSender.sendAlarmToWatch(context, alarmMapMutable)
+                        result.success("Alarm sent to watch.")
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Alarm data or alarmId missing.", null)
+                    }                    
+                }
+                else -> result.notImplemented()
             }
-        }  
+        }        
 
         methodChannel3.setMethodCallHandler { call, result ->
             when (call.method) {

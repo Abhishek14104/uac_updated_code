@@ -12,7 +12,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:ultimate_alarm_clock/app/utils/language.dart';
 import 'package:ultimate_alarm_clock/app/utils/constants.dart';
 import 'package:ultimate_alarm_clock/app/utils/custom_error_screen.dart';
-import 'package:ultimate_alarm_clock/communication.dart';
+import 'package:ultimate_alarm_clock/app/communication/communication.dart';
+import 'package:ultimate_alarm_clock/native_action_handler.dart';
 import 'firebase_options.dart';
 import 'app/routes/app_pages.dart';
 
@@ -33,13 +34,13 @@ void main() async {
 
 
   await Get.putAsync(() => GetStorageProvider().init());
+  await Get.putAsync(() => NativeActionHandler().init());
 
   final storage = Get.find<GetStorageProvider>();
   loc = await storage.readLocale();
 
   final ThemeController themeController = Get.put(ThemeController());
   Get.put(ThemeController());
-  // Get.put(DebugController());
 
   AudioPlayer.global.setAudioContext(
     const AudioContext(

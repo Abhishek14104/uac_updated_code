@@ -13,7 +13,6 @@ import '../../../data/models/debug_model.dart';
 class DebugController extends GetxController {
   final ThemeController themeController = Get.find<ThemeController>();
   final TextEditingController searchController = TextEditingController();
-  final receivedAlarms = <AlarmModel>[].obs;
 
   var logs = <Map<String, dynamic>>[].obs;
   var filteredLogs = <Map<String, dynamic>>[].obs;
