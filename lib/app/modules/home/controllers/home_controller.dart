@@ -17,6 +17,7 @@ import 'package:ultimate_alarm_clock/app/data/providers/firestore_provider.dart'
 import 'package:ultimate_alarm_clock/app/data/providers/get_storage_provider.dart';
 import 'package:ultimate_alarm_clock/app/data/providers/isar_provider.dart';
 import 'package:ultimate_alarm_clock/app/data/providers/secure_storage_provider.dart';
+import 'package:ultimate_alarm_clock/app/modules/addOrUpdateAlarm/controllers/add_or_update_alarm_controller.dart';
 import 'package:ultimate_alarm_clock/app/modules/settings/controllers/theme_controller.dart';
 import 'package:ultimate_alarm_clock/app/utils/constants.dart';
 import 'package:ultimate_alarm_clock/app/utils/utils.dart';
@@ -34,6 +35,7 @@ class Pair<T, U> {
 
 class HomeController extends GetxController {
   MethodChannel alarmChannel = const MethodChannel('ulticlock');
+  static const MethodChannel watchSyncChannel = MethodChannel('watch_action_channel');
 
   Stream<QuerySnapshot>? firestoreStreamAlarms;
   Stream<QuerySnapshot>? sharedAlarmsStream;
@@ -418,6 +420,26 @@ class HomeController extends GetxController {
   @override
   void onInit() async {
     super.onInit();
+
+  //  const MethodChannel('com.ccextractor.uac/alarm_actions')
+  //     .setMethodCallHandler((call) async {
+  //   if (call.method == 'handleReceivedAction') {
+  //     final action = call.arguments['action'] as String?;
+  //     final uniqueSyncId = call.arguments['id'] as String?;
+
+  //     if (action == 'delete' && uniqueSyncId != null) {
+  //       print("HomeController: Received 'delete' action for $uniqueSyncId");
+        
+  //       // Call our static handler to perform the deletion
+  //       await AddOrUpdateAlarmController.handleWatchDelete(uniqueSyncId);
+
+  //       // Refresh the UI and reschedule the next valid alarm
+  //       // await refreshAlarms();
+  //     }
+  //   }
+  // });
+
+    refreshUpcomingAlarms();
     
     // Clear all alarm tracking on init to ensure clean startup
     recentlyDismissedAlarmIds.clear();
@@ -1330,6 +1352,13 @@ class HomeController extends GetxController {
       }
       
       await FirestoreDb.deleteAlarm(user, alarm.firestoreId!);
+
+      if (alarmToDelete != null) {
+      await watchSyncChannel.invokeMethod('sendActionToWatch', {
+        'action': 'delete alarm',
+        'id': alarmToDelete.alarmID,
+      });
+    }
     } else {
       alarmToDelete = await IsarDb.getAlarm(alarm.isarId);
       
@@ -1345,6 +1374,12 @@ class HomeController extends GetxController {
       }
       
       await IsarDb.deleteAlarm(alarm.isarId);
+      if (alarmToDelete != null) {
+      await watchSyncChannel.invokeMethod('sendActionToWatch', {
+        'action': 'delete alarm',
+        'id': alarmToDelete.alarmID,
+      });
+    }
     }
 
     if (Get.isSnackbarOpen) {

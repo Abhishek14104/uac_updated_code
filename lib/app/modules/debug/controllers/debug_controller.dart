@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_rx/get_rx.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:ultimate_alarm_clock/app/data/models/alarm_model.dart';
 import 'dart:async';
 import '../../../data/providers/isar_provider.dart';
 import '../../../modules/settings/controllers/theme_controller.dart';
@@ -12,7 +13,7 @@ import '../../../data/models/debug_model.dart';
 class DebugController extends GetxController {
   final ThemeController themeController = Get.find<ThemeController>();
   final TextEditingController searchController = TextEditingController();
-  
+
   var logs = <Map<String, dynamic>>[].obs;
   var filteredLogs = <Map<String, dynamic>>[].obs;
   var selectedLogLevel = Rxn<LogLevel>();

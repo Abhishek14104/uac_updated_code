@@ -346,7 +346,7 @@ class DebugView extends GetView<DebugController> {
             size: 64,
             color: controller.themeController.primaryTextColor.value.withOpacity(0.3),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
             'No alarm history found',
             style: TextStyle(

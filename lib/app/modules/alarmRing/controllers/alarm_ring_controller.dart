@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -30,6 +29,10 @@ import 'package:screen_brightness/screen_brightness.dart';
 import '../../home/controllers/home_controller.dart';
 
 class AlarmControlController extends GetxController {
+
+  // static const _channel = MethodChannel('com.ccextractor.uac/alarm_actions');
+  static const MethodChannel watchSyncChannel = MethodChannel('watch_action_channel');
+
   MethodChannel alarmChannel = MethodChannel('ulticlock');
   RxString note = ''.obs;
   Timer? vibrationTimer;
@@ -172,6 +175,79 @@ class AlarmControlController extends GetxController {
       timeNow.value =
           Utils.convertTo12HourFormat(Utils.timeOfDayToString(TimeOfDay.now()));
     });
+  }
+
+  Future<void> sendToWatch(String action) async {
+    try {
+      await watchSyncChannel.invokeMethod('sendActionToWatch', {
+        'action': action, 
+        'id': currentlyRingingAlarm.value.alarmID,
+      });
+
+      print('✅ Sent $action action to watch');
+    } catch (e) {
+      print('Failed to send $action to watch: $e');
+    }
+  }
+
+  // Future<void> handleReceivedAction(MethodCall call) async {
+  //   if (call.method == 'handleReceivedAction') {
+  //     final String? action = call.arguments['action'];
+  //     final String alarmId = call.arguments['alarmId'];
+  //     // final Int isarId = call.arguments['isarId'];
+  //     print('✅ Received native action from watch: $action for alarmId: $alarmId');
+
+  //     if (action == 'dismiss') {
+  //       await dismissAlarm();
+  //       refresh();
+  //     } else if (action == 'snooze') {
+  //       startSnooze();
+  //     }
+  //   }
+  // }
+
+  // Centralized method to handle alarm dismissal.
+  Future<void> dismissAlarm() async {
+    Utils.hapticFeedback();
+    await sendToWatch('dismiss'); 
+
+    debugPrint('🔔 Dismissing alarm via controller method');
+
+    if (isPreviewMode.value) {
+      debugPrint('🔔 Preview mode - simple navigation back');
+      Get.offAllNamed('/bottom-navigation-bar');
+      return;
+    }
+
+    if (currentlyRingingAlarm.value.isGuardian) {
+      guardianTimer.cancel();
+      debugPrint('🔔 Guardian timer canceled');
+    }
+
+    if (currentlyRingingAlarm.value.isSharedAlarmEnabled) {
+      rememberDismissedAlarm();
+      debugPrint('🔔 Blocked shared alarm: ${currentlyRingingAlarm.value.alarmTime}, ID: ${currentlyRingingAlarm.value.firestoreId}');
+    }
+
+    await homeController.clearLastScheduledAlarm();
+    debugPrint('🔔 Cleared all scheduled alarms');
+
+    homeController.refreshTimer = true;
+    debugPrint('🔔 Set refresh flag for alarm scheduling');
+
+    if (Utils.isChallengeEnabled(currentlyRingingAlarm.value)) {
+      debugPrint('🔔 Navigating to challenge screen');
+      Get.toNamed(
+        '/alarm-challenge',
+        arguments: currentlyRingingAlarm.value,
+      );
+    } else {
+      debugPrint('🔔 Navigating to home screen');
+      Get.offAllNamed(
+        '/bottom-navigation-bar',
+        arguments: currentlyRingingAlarm.value,
+      );
+    }
   }
 
   Future<void> _fadeInAlarmVolume() async {
@@ -317,6 +393,8 @@ class AlarmControlController extends GetxController {
     super.onInit();
     startListeningToFlip();
     
+    // _channel.setMethodCallHandler(handleReceivedAction);
+
     // Extract alarm and preview flag from arguments
     final args = Get.arguments;
     if (args is Map) {
